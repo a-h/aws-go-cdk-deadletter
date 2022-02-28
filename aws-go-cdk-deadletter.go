@@ -2,9 +2,7 @@ package main
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
-	// "github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
-	// "github.com/aws/jsii-runtime-go"
 )
 
 type AWSGoCDKDeadletterStackProps struct {
@@ -18,19 +16,21 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	// The code that defines your stack goes here
-
-	// example resource
-	// queue := awssqs.NewQueue(stack, jsii.String("AwsGoCdkDeadletterQueue"), &awssqs.QueueProps{
-	// 	VisibilityTimeout: awscdk.Duration_Seconds(jsii.Number(300)),
-	// })
+	// Create EventBridge Bus.
+	// Create Lambda function to process messages on the bus.
+	//   It will crash when receiving a message with `{ "behaviour": "fail" }` in it and succeed with any other message.
+	//   The message will log its execution.
+	// Create EventBridge Subscription.
+	// Test what happens when a message fails multiple times.
+	// Implement a dead letter queue.
+	//   Ensure that the dead letter queue is encrypted at rest.
 
 	return stack
 }
 
 func main() {
 	app := awscdk.NewApp(nil)
-	NewAWSGoCDKDeadletterStack(app, "AwsGoCdkDeadletterStack", &AWSGoCDKDeadletterStackProps{
+	NewAWSGoCDKDeadletterStack(app, "AWSGoCDKDeadletterStack", &AWSGoCDKDeadletterStackProps{
 		awscdk.StackProps{
 			Env: nil,
 		},
