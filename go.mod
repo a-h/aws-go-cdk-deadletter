@@ -3,7 +3,7 @@ module aws-go-cdk-deadletter
 go 1.16
 
 require (
-	github.com/akrylysov/algnhsa v0.12.1
+	github.com/a-h/awsapigatewayv2handler v0.0.0-20220105110754-1faf38b2f782
 	github.com/aws/aws-cdk-go/awscdk/v2 v2.15.0
 	github.com/aws/aws-cdk-go/awscdkapigatewayv2alpha/v2 v2.15.0-alpha.0
 	github.com/aws/aws-cdk-go/awscdkapigatewayv2integrationsalpha/v2 v2.15.0-alpha.0

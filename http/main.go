@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/akrylysov/algnhsa"
+	"github.com/a-h/awsapigatewayv2handler"
 )
 
 func main() {
@@ -15,5 +15,5 @@ func main() {
 		io.WriteString(w, "Hello")
 	})
 
-	algnhsa.ListenAndServe(http.DefaultServeMux, nil)
+	awsapigatewayv2handler.ListenAndServe(http.DefaultServeMux)
 }

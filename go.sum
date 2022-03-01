@@ -1,8 +1,8 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
-github.com/akrylysov/algnhsa v0.12.1 h1:A9Ojt4hZrL77mhBc3qGO3Sn9reyf+tvM3DmR0SfXguc=
-github.com/akrylysov/algnhsa v0.12.1/go.mod h1:xAcJ/X8DV+81e+dUjIoB/r5CbISrSXV9//leoMDHcdk=
+github.com/a-h/awsapigatewayv2handler v0.0.0-20220105110754-1faf38b2f782 h1:q9C3shtaggLip4uwp9GPjrwMaSXxp0eYYYZU2OAC+Gw=
+github.com/a-h/awsapigatewayv2handler v0.0.0-20220105110754-1faf38b2f782/go.mod h1:AEl2QgRNtDvkYB2kZWR0bnmDmVwt+2JnhmyzV3oShJo=
 github.com/aws/aws-cdk-go/awscdk/v2 v2.14.0/go.mod h1:EBLkGLkGx7DGQHTqth6V+0STQVzJbkrC7WlIQvy54Vs=
 github.com/aws/aws-cdk-go/awscdk/v2 v2.15.0 h1:KaNNLKo6JZ63ccfMQq1Dp3AXf/qAD0YKMWQ470Eatj8=
 github.com/aws/aws-cdk-go/awscdk/v2 v2.15.0/go.mod h1:EBLkGLkGx7DGQHTqth6V+0STQVzJbkrC7WlIQvy54Vs=
@@ -12,7 +12,7 @@ github.com/aws/aws-cdk-go/awscdkapigatewayv2integrationsalpha/v2 v2.15.0-alpha.0
 github.com/aws/aws-cdk-go/awscdkapigatewayv2integrationsalpha/v2 v2.15.0-alpha.0/go.mod h1:lJXXF4Y2DToVdrHzZQX810fvQXmMvk94ZvBs/KT8cP4=
 github.com/aws/aws-cdk-go/awscdklambdagoalpha/v2 v2.14.0-alpha.0 h1:73OIK00h4S3RBBS9RzivBkBYaQI37m8FYvLGcoWS+pE=
 github.com/aws/aws-cdk-go/awscdklambdagoalpha/v2 v2.14.0-alpha.0/go.mod h1:n0EXvZq9DPGUs1I+WxY/lwzlOZPmYenxl/Z05SpRFyw=
-github.com/aws/aws-lambda-go v1.9.0/go.mod h1:zUsUQhAUjYzR8AuduJPCfhBuKWUaDbQiPOG+ouzmE1A=
+github.com/aws/aws-lambda-go v1.27.0/go.mod h1:jJmlefzPfGnckuHdXX7/80O3BvUUi12XOkbv4w9SGLU=
 github.com/aws/aws-lambda-go v1.28.0 h1:fZiik1PZqW2IyAN4rj+Y0UBaO1IDFlsNo9Zz/XnArK4=
 github.com/aws/aws-lambda-go v1.28.0/go.mod h1:jJmlefzPfGnckuHdXX7/80O3BvUUi12XOkbv4w9SGLU=
 github.com/aws/constructs-go/constructs/v10 v10.0.9 h1:YGk+deTAD3rgyANybjOtaoVrjC7HZZtALeC872avWFQ=
@@ -27,6 +27,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.0/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsr
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/google/go-cmp v0.5.6 h1:BKbKCqvP6I+rmFHt06ZmyQtvB8xAkWdhFyr0ZUNZcxQ=
+github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
@@ -75,6 +77,7 @@ golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e/go.mod h1:b+2E5dAYhXwXZwtn
 golang.org/x/tools v0.1.5/go.mod h1:o0xws9oXOQQZyjljx8fwUC0k7L1pTE6eaCbjGeHmOkk=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
+golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
