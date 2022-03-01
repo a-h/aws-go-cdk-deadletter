@@ -92,7 +92,7 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 	// Create API Gateway.
 	f := awslambdago.NewGoFunction(stack, jsii.String("Handler"), &awslambdago.GoFunctionProps{
 		Runtime:    awslambda.Runtime_GO_1_X(),
-		Entry:      jsii.String("../http"),
+		Entry:      jsii.String("./http"),
 		Bundling:   bundlingOptions,
 		MemorySize: jsii.Number(1024),
 		Timeout:    awscdk.Duration_Millis(jsii.Number(15000)),
@@ -102,14 +102,15 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 		},
 	})
 	// Scrape JSON logs for errors.
-	addErrorLogMetricFilterToLambda(stack, applicationErrorNamespace, onEventHandler)
+	addErrorLogMetricFilterToLambda(stack, applicationErrorNamespace, f)
+
 	// Send all paths to the same handler.
 	fi := awsapigatewayv2integrations.NewHttpLambdaIntegration(jsii.String("DefaultHandlerIntegration"), f, &awsapigatewayv2integrations.HttpLambdaIntegrationProps{})
 	endpoint := awsapigatewayv2.NewHttpApi(stack, jsii.String("ApiGatewayV2API"), &awsapigatewayv2.HttpApiProps{
 		DefaultIntegration: fi,
 	})
-	awscdk.NewCfnOutput(stack, jsii.String("url"), &awscdk.CfnOutputProps{
-		ExportName: jsii.String("url"),
+	awscdk.NewCfnOutput(stack, jsii.String("Url"), &awscdk.CfnOutputProps{
+		ExportName: jsii.String("Url"),
 		Value:      endpoint.Url(),
 	})
 

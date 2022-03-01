@@ -1,7 +1,8 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
-github.com/aws/aws-cdk-go/awscdk/v2 v2.14.0 h1:1xWEhJ1RTDN5+rTSx4FQ2IYPHm0O1mfXcaxvYzb+PIg=
+github.com/akrylysov/algnhsa v0.12.1 h1:A9Ojt4hZrL77mhBc3qGO3Sn9reyf+tvM3DmR0SfXguc=
+github.com/akrylysov/algnhsa v0.12.1/go.mod h1:xAcJ/X8DV+81e+dUjIoB/r5CbISrSXV9//leoMDHcdk=
 github.com/aws/aws-cdk-go/awscdk/v2 v2.14.0/go.mod h1:EBLkGLkGx7DGQHTqth6V+0STQVzJbkrC7WlIQvy54Vs=
 github.com/aws/aws-cdk-go/awscdk/v2 v2.15.0 h1:KaNNLKo6JZ63ccfMQq1Dp3AXf/qAD0YKMWQ470Eatj8=
 github.com/aws/aws-cdk-go/awscdk/v2 v2.15.0/go.mod h1:EBLkGLkGx7DGQHTqth6V+0STQVzJbkrC7WlIQvy54Vs=
@@ -11,6 +12,7 @@ github.com/aws/aws-cdk-go/awscdkapigatewayv2integrationsalpha/v2 v2.15.0-alpha.0
 github.com/aws/aws-cdk-go/awscdkapigatewayv2integrationsalpha/v2 v2.15.0-alpha.0/go.mod h1:lJXXF4Y2DToVdrHzZQX810fvQXmMvk94ZvBs/KT8cP4=
 github.com/aws/aws-cdk-go/awscdklambdagoalpha/v2 v2.14.0-alpha.0 h1:73OIK00h4S3RBBS9RzivBkBYaQI37m8FYvLGcoWS+pE=
 github.com/aws/aws-cdk-go/awscdklambdagoalpha/v2 v2.14.0-alpha.0/go.mod h1:n0EXvZq9DPGUs1I+WxY/lwzlOZPmYenxl/Z05SpRFyw=
+github.com/aws/aws-lambda-go v1.9.0/go.mod h1:zUsUQhAUjYzR8AuduJPCfhBuKWUaDbQiPOG+ouzmE1A=
 github.com/aws/aws-lambda-go v1.28.0 h1:fZiik1PZqW2IyAN4rj+Y0UBaO1IDFlsNo9Zz/XnArK4=
 github.com/aws/aws-lambda-go v1.28.0/go.mod h1:jJmlefzPfGnckuHdXX7/80O3BvUUi12XOkbv4w9SGLU=
 github.com/aws/constructs-go/constructs/v10 v10.0.9 h1:YGk+deTAD3rgyANybjOtaoVrjC7HZZtALeC872avWFQ=
