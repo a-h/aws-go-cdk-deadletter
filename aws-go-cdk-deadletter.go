@@ -121,7 +121,7 @@ func addAlarmSNSTopic(stack awscdk.Stack) awssns.Topic {
 
 func addDLQAlarm(stack awscdk.Stack, id *string, dlq awssqs.IQueue, alarmTopic awssns.ITopic) {
 	m := dlq.Metric(jsii.String("ApproximateNumberOfMessagesVisible"), &awscloudwatch.MetricOptions{
-		Statistic: jsii.String("sum"),                      // The sum of errors over a
+		Statistic: jsii.String("Maximum"),                  // The Max ApproximateNumberOfMessagesVisible within a
 		Period:    awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
 	})
 	alarm := awscloudwatch.NewAlarm(stack, id, &awscloudwatch.AlarmProps{
@@ -131,7 +131,7 @@ func addDLQAlarm(stack awscdk.Stack, id *string, dlq awssqs.IQueue, alarmTopic a
 		EvaluationPeriods:  jsii.Number(1),                                                      // If, in the last "1" of those periods
 		DatapointsToAlarm:  jsii.Number(1),                                                      // There's more than one datapoint
 		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_OR_EQUAL_TO_THRESHOLD, // Where the metric >= to
-		Threshold:          jsii.Number(0),                                                      // The value of 1... then
+		Threshold:          jsii.Number(1),                                                      // The value of 1... then
 		ActionsEnabled:     jsii.Bool(true),                                                     // Do the actions.
 		TreatMissingData:   awscloudwatch.TreatMissingData_NOT_BREACHING,                        // And ignore any missing data.
 	})
