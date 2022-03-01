@@ -113,6 +113,23 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 		ExportName: jsii.String("Url"),
 		Value:      endpoint.Url(),
 	})
+	// Alert on > 40% server errors within a 5 minute window.
+	serverErrors := endpoint.MetricServerError(&awscloudwatch.MetricOptions{
+		Statistic: jsii.String("Average"),                  // The Average of 500 errors (vs standard requests) within a
+		Period:    awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
+	})
+	serverErrorsAlarm := awscloudwatch.NewAlarm(stack, jsii.String("ApiGatewayErrorsAlarm"), &awscloudwatch.AlarmProps{
+		AlarmDescription:   jsii.String("Error logged by service."),
+		AlarmName:          jsii.String(applicationErrorNamespace + "ApiGateway500ErrorRate"),
+		Metric:             serverErrors,                                                        // The metric is...
+		EvaluationPeriods:  jsii.Number(1),                                                      // If, in the last "1" of those periods
+		DatapointsToAlarm:  jsii.Number(1),                                                      // There's more than one datapoint
+		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_OR_EQUAL_TO_THRESHOLD, // Where the metric >= to
+		Threshold:          jsii.Number(0.4),                                                    // The value of 40% then
+		ActionsEnabled:     jsii.Bool(true),                                                     // Do the actions.
+		TreatMissingData:   awscloudwatch.TreatMissingData_NOT_BREACHING,                        // And ignore any missing data.
+	})
+	serverErrorsAlarm.AddAlarmAction(awscloudwatchactions.NewSnsAction(alarmTopic))
 
 	return stack
 }
