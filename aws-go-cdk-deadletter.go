@@ -33,21 +33,17 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 	bundlingOptions := &awslambdago.BundlingOptions{
 		GoBuildFlags: &[]*string{jsii.String(`-ldflags "-s -w"`)},
 	}
-	applicationErrorNamespace := "AwsGoCdkDeadLetterStack"
 
 	// Create a shared SNS topic to send alerts to.
 	alarmTopic := addAlarmSNSTopic(stack)
 
-	// Alarm if any errors are logged, and notify the topic.
-	addErrorsLoggedAlarm(stack, applicationErrorNamespace, alarmTopic)
-
-	// Create a shared dead letter queue with appropriate encryption settings.
-	dlq := awssqs.NewQueue(stack, jsii.String("EventHandlerDLQ"), &awssqs.QueueProps{
+	// Create a dead letter queue for the onEventHandler function.
+	onEventHandlerDLQ := awssqs.NewQueue(stack, jsii.String("EventHandlerDLQ"), &awssqs.QueueProps{
 		Encryption:      awssqs.QueueEncryption_KMS_MANAGED,
 		RetentionPeriod: awscdk.Duration_Days(jsii.Number(14)),
 	})
 	// Add an alarm to the queue.
-	addDLQAlarm(stack, jsii.String("EventHandlerDLQAlarm"), dlq, alarmTopic)
+	addDLQAlarm(stack, jsii.String("EventHandlerDLQAlarm"), onEventHandlerDLQ, alarmTopic)
 
 	// Create a Lambda function to process messages on the bus.
 	// The Lambda function will return an error if a message with `{ "shoudlFail": true }` is sent.
@@ -63,11 +59,13 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 		Runtime:    awslambda.Runtime_GO_1_X(),
 		// Dead letter handling configuration.
 		RetryAttempts:          jsii.Number(2),
-		DeadLetterQueue:        dlq,
+		DeadLetterQueue:        onEventHandlerDLQ,
 		DeadLetterQueueEnabled: jsii.Bool(true),
 	})
-	// Scrape JSON logs for errors.
-	addErrorLogMetricFilterToLambda(stack, applicationErrorNamespace, onEventHandler)
+	// Scrape JSON logs for errors and alert if any are found.
+	addErrorsLoggedAlarm(stack, jsii.String("OnEventHandlerErrorsLogged"), onEventHandler, 1, alarmTopic)
+	// Alert if over 40% of requests within a 5 minute window throw errors.
+	addLambdaErrorsAlarm(stack, jsii.String("OnEventHandlerLambdaErrors"), onEventHandler, 0.4, alarmTopic)
 
 	// Create an EventBridge Bus to send input messages to.
 	eventBus := awsevents.NewEventBus(stack, jsii.String("EventBus"), &awsevents.EventBusProps{})
@@ -84,7 +82,7 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 		Targets: &[]awsevents.IRuleTarget{
 			// Configure the EventBridge target dead letter queue.
 			awseventstargets.NewLambdaFunction(onEventHandler, &awseventstargets.LambdaFunctionProps{
-				DeadLetterQueue: dlq,
+				DeadLetterQueue: onEventHandlerDLQ,
 			}),
 		},
 	})
@@ -101,8 +99,10 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 			"AWS_XRAY_CONTEXT_MISSING": jsii.String("IGNORE_ERROR"),
 		},
 	})
-	// Scrape JSON logs for errors.
-	addErrorLogMetricFilterToLambda(stack, applicationErrorNamespace, f)
+	// Scrape JSON logs for errors and alert if any are found.
+	addErrorsLoggedAlarm(stack, jsii.String("HandlerErrorsLogged"), f, 1, alarmTopic)
+	// Alert if over 40% of requests within a 5 minute window throw errors.
+	addLambdaErrorsAlarm(stack, jsii.String("HandlerLambdaErrors"), f, 0.4, alarmTopic)
 
 	// Send all paths to the same handler.
 	fi := awsapigatewayv2integrations.NewHttpLambdaIntegration(jsii.String("DefaultHandlerIntegration"), f, &awsapigatewayv2integrations.HttpLambdaIntegrationProps{})
@@ -114,26 +114,14 @@ func NewAWSGoCDKDeadletterStack(scope constructs.Construct, id string, props *AW
 		Value:      endpoint.Url(),
 	})
 	// Alert on > 40% server errors within a 5 minute window.
-	serverErrors := endpoint.MetricServerError(&awscloudwatch.MetricOptions{
-		Statistic: jsii.String("Average"),                  // The Average of 500 errors (vs standard requests) within a
-		Period:    awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
-	})
-	serverErrorsAlarm := awscloudwatch.NewAlarm(stack, jsii.String("ApiGatewayErrorsAlarm"), &awscloudwatch.AlarmProps{
-		AlarmDescription:   jsii.String("Error logged by service."),
-		AlarmName:          jsii.String(applicationErrorNamespace + "ApiGateway500ErrorRate"),
-		Metric:             serverErrors,                                                        // The metric is...
-		EvaluationPeriods:  jsii.Number(1),                                                      // If, in the last "1" of those periods
-		DatapointsToAlarm:  jsii.Number(1),                                                      // There's more than one datapoint
-		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_OR_EQUAL_TO_THRESHOLD, // Where the metric >= to
-		Threshold:          jsii.Number(0.4),                                                    // The value of 40% then
-		ActionsEnabled:     jsii.Bool(true),                                                     // Do the actions.
-		TreatMissingData:   awscloudwatch.TreatMissingData_NOT_BREACHING,                        // And ignore any missing data.
-	})
-	serverErrorsAlarm.AddAlarmAction(awscloudwatchactions.NewSnsAction(alarmTopic))
+	addAPIGatewayErrorsAlarm(stack, jsii.String("HTTPApi500Errors"), endpoint, 0.4, alarmTopic)
 
 	return stack
 }
 
+// addAlarmSNSTopic creates a shared SNS topic to attach all alarm notifications to.
+// In a production stack, you might expect to import this from a stack that contains
+// infrastructure used by multiple projects.
 func addAlarmSNSTopic(stack awscdk.Stack) awssns.Topic {
 	alarmEncryptionKey := awskms.NewKey(stack, jsii.String("AlarmTopicKey"), &awskms.KeyProps{})
 	alarmEncryptionKey.AddToResourcePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
@@ -170,15 +158,15 @@ func addAlarmSNSTopic(stack awscdk.Stack) awssns.Topic {
 	return topic
 }
 
+// addDLQAlarm creates an alarm against the dead letter queue when it contains any messages.
 func addDLQAlarm(stack awscdk.Stack, id *string, dlq awssqs.IQueue, alarmTopic awssns.ITopic) {
-	m := dlq.Metric(jsii.String("ApproximateNumberOfMessagesVisible"), &awscloudwatch.MetricOptions{
-		Statistic: jsii.String("Maximum"),                  // The Max ApproximateNumberOfMessagesVisible within a
-		Period:    awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
-	})
 	alarm := awscloudwatch.NewAlarm(stack, id, &awscloudwatch.AlarmProps{
-		AlarmDescription:   jsii.String("Queue depth alarm for DLQ."),
-		AlarmName:          jsii.String("QueueDepthAlarm-" + *dlq.QueueName()),
-		Metric:             m,                                                                   // The metric is...
+		AlarmDescription: jsii.String("Queue depth alarm for DLQ."),
+		AlarmName:        id,
+		Metric: dlq.Metric(jsii.String("ApproximateNumberOfMessagesVisible"), &awscloudwatch.MetricOptions{
+			Statistic: jsii.String("Maximum"),                  // The Max ApproximateNumberOfMessagesVisible within a
+			Period:    awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
+		}),
 		EvaluationPeriods:  jsii.Number(1),                                                      // If, in the last "1" of those periods
 		DatapointsToAlarm:  jsii.Number(1),                                                      // There's more than one datapoint
 		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_OR_EQUAL_TO_THRESHOLD, // Where the metric >= to
@@ -189,10 +177,52 @@ func addDLQAlarm(stack awscdk.Stack, id *string, dlq awssqs.IQueue, alarmTopic a
 	alarm.AddAlarmAction(awscloudwatchactions.NewSnsAction(alarmTopic))
 }
 
-func addErrorLogMetricFilterToLambda(stack awscdk.Stack, metricNamespace string, f awslambdago.GoFunction) {
-	awslogs.NewMetricFilter(stack, jsii.String(*f.Node().Id()+"_ErrorLogMetricFilter"), &awslogs.MetricFilterProps{
+// addAPIGatewayErrorsAlarm creates an alarm that triggers when the HTTP API receives more than the rate percentage (expressed as a value between 0.0 and 1.0) of 500 errors.
+func addAPIGatewayErrorsAlarm(stack awscdk.Stack, id *string, endpoint awsapigatewayv2.HttpApi, ratePercentage float64, alarmTopic awssns.ITopic) {
+	errorsAlarm := awscloudwatch.NewAlarm(stack, id, &awscloudwatch.AlarmProps{
+		AlarmDescription: jsii.String("API Gateway 500 errors."),
+		AlarmName:        id,
+		Metric: endpoint.MetricServerError(&awscloudwatch.MetricOptions{
+			Statistic: jsii.String("Average"),                  // The Average of 500 errors (vs standard requests) within a
+			Period:    awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
+		}),
+		EvaluationPeriods:  jsii.Number(1),                                          // If, in the last "1" of those periods
+		DatapointsToAlarm:  jsii.Number(1),                                          // There's more than one datapoint
+		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_THRESHOLD, // Where the metric >= to
+		Threshold:          &ratePercentage,                                         // The value of 0.4 would be 40% then
+		ActionsEnabled:     jsii.Bool(true),                                         // Do the actions.
+		TreatMissingData:   awscloudwatch.TreatMissingData_NOT_BREACHING,            // And ignore any missing data.
+	})
+	errorsAlarm.AddAlarmAction(awscloudwatchactions.NewSnsAction(alarmTopic))
+}
+
+// addLambdaErrorsAlarm creates an alarm that triggers when the given Lambda function is erroring at a rate above the expected percentage. The rate is useful since
+// some integration endpoints may have a < 0.01 (1%) error rate, and have a dead letter queue attached.
+func addLambdaErrorsAlarm(stack awscdk.Stack, id *string, f awslambdago.GoFunction, ratePercentage float64, alarmTopic awssns.ITopic) {
+	errorsAlarm := awscloudwatch.NewAlarm(stack, id, &awscloudwatch.AlarmProps{
+		AlarmDescription: jsii.String("Error logged by service."),
+		AlarmName:        id,
+		Metric: f.MetricErrors(&awscloudwatch.MetricOptions{
+			Statistic: jsii.String("Average"),                  // The Average of Lambda errors (vs successful requests) within a
+			Period:    awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
+		}),
+		EvaluationPeriods:  jsii.Number(1),                                          // If, in the last "1" of those periods
+		DatapointsToAlarm:  jsii.Number(1),                                          // There's more than one datapoint
+		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_THRESHOLD, // Where the metric >= to
+		Threshold:          &ratePercentage,                                         // The value of 40% then
+		ActionsEnabled:     jsii.Bool(true),                                         // Do the actions.
+		TreatMissingData:   awscloudwatch.TreatMissingData_NOT_BREACHING,            // And ignore any missing data.
+	})
+	errorsAlarm.AddAlarmAction(awscloudwatchactions.NewSnsAction(alarmTopic))
+}
+
+// addErrorsLoggedAlarm creates an alarm that triggers when the number of allowed error logs within a 5 minute is exceeded. It's expected that the
+// usual value will be 0, i.e. alert on any error.
+func addErrorsLoggedAlarm(stack awscdk.Stack, id *string, f awslambdago.GoFunction, errorsIn5MinuteWindow int, alarmTopic awssns.ITopic) {
+	metricNamespace := f.Stack().StackName()
+	awslogs.NewMetricFilter(stack, jsii.String(*id+"_MF"), &awslogs.MetricFilterProps{
 		LogGroup:        f.LogGroup(),
-		MetricNamespace: jsii.String(metricNamespace),
+		MetricNamespace: metricNamespace,
 		MetricName:      jsii.String("errorsLogged"),
 		FilterPattern: awslogs.FilterPattern_Any(
 			awslogs.FilterPattern_StringValue(jsii.String("$.level"), jsii.String("="), jsii.String("error")),
@@ -200,27 +230,23 @@ func addErrorLogMetricFilterToLambda(stack awscdk.Stack, metricNamespace string,
 		),
 		MetricValue: jsii.String("1"),
 	})
-}
-
-func addErrorsLoggedAlarm(stack awscdk.Stack, metricNamespace string, topic awssns.ITopic) {
-	m := awscloudwatch.NewMetric(&awscloudwatch.MetricProps{
-		MetricName: jsii.String("errorsLogged"),
-		Namespace:  jsii.String(metricNamespace),
-		Statistic:  jsii.String("sum"),                      // The sum of errors over a
-		Period:     awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
+	errorsAlarm := awscloudwatch.NewAlarm(stack, jsii.String(*id+"_Alarm"), &awscloudwatch.AlarmProps{
+		AlarmDescription: jsii.String("Error logged by service."),
+		AlarmName:        jsii.String(*id + "_ErrorsLoggedAlarm"),
+		Metric: awscloudwatch.NewMetric(&awscloudwatch.MetricProps{
+			MetricName: jsii.String("errorsLogged"),
+			Namespace:  metricNamespace,
+			Statistic:  jsii.String("sum"),                      // The sum of errors over a
+			Period:     awscdk.Duration_Minutes(jsii.Number(5)), // 5 minute period.
+		}),
+		EvaluationPeriods:  jsii.Number(1),                                          // If, in the last "1" of those periods
+		DatapointsToAlarm:  jsii.Number(1),                                          // There's more than one datapoint
+		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_THRESHOLD, // Where the metric >= to
+		Threshold:          jsii.Number(float64(errorsIn5MinuteWindow)),             // The max errors in 5 minute window then
+		ActionsEnabled:     jsii.Bool(true),                                         // Do the actions.
+		TreatMissingData:   awscloudwatch.TreatMissingData_NOT_BREACHING,            // And ignore any missing data.
 	})
-	alarm := awscloudwatch.NewAlarm(stack, jsii.String("errorsLoggedAlarm"), &awscloudwatch.AlarmProps{
-		AlarmDescription:   jsii.String("Error logged by service."),
-		AlarmName:          jsii.String(metricNamespace + "ErrorsLogged"),
-		Metric:             m,                                                                   // The metric is...
-		EvaluationPeriods:  jsii.Number(1),                                                      // If, in the last "1" of those periods
-		DatapointsToAlarm:  jsii.Number(1),                                                      // There's more than one datapoint
-		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_OR_EQUAL_TO_THRESHOLD, // Where the metric >= to
-		Threshold:          jsii.Number(1),                                                      // The value of 1... then
-		ActionsEnabled:     jsii.Bool(true),                                                     // Do the actions.
-		TreatMissingData:   awscloudwatch.TreatMissingData_NOT_BREACHING,                        // And ignore any missing data.
-	})
-	alarm.AddAlarmAction(awscloudwatchactions.NewSnsAction(topic))
+	errorsAlarm.AddAlarmAction(awscloudwatchactions.NewSnsAction(alarmTopic))
 }
 
 func main() {
